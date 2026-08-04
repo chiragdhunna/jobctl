@@ -204,3 +204,61 @@ class OutreachDraft(Base):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<OutreachDraft {self.id} job={self.job_id} {self.channel} [{self.status}]>"
+
+
+class AgentRun(Base):
+    __tablename__ = "agent_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    graph_name: Mapped[str] = mapped_column(String(128), index=True)
+    started_at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow)
+    finished_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime, default=None)
+    status: Mapped[str] = mapped_column(String(32), default="running", index=True)
+    cost_estimate: Mapped[float] = mapped_column(Float, default=0.0)
+
+    steps: Mapped[List["AgentStep"]] = relationship(back_populates="run", cascade="all, delete-orphan")
+
+
+class AgentStep(Base):
+    __tablename__ = "agent_steps"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("agent_runs.id", ondelete="CASCADE"), index=True)
+    node_name: Mapped[str] = mapped_column(String(128), index=True)
+    input_json: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    output_json: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    tool_calls_json: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    timestamp: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow)
+
+    run: Mapped["AgentRun"] = relationship(back_populates="steps")
+
+
+class Suggestion(Base):
+    __tablename__ = "suggestions"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    source_agent: Mapped[str] = mapped_column(String(64), index=True)
+    kind: Mapped[str] = mapped_column(String(64), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    reviewed_at: Mapped[Optional[dt.datetime]] = mapped_column(DateTime, default=None)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class CompanyResearch(Base):
+    __tablename__ = "company_research"
+
+    company_name: Mapped[str] = mapped_column(String(255), primary_key=True, index=True)
+    summary: Mapped[str] = mapped_column(Text)
+    sources_json: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    fetched_at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class FeedbackEvent(Base):
+    __tablename__ = "feedback_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("jobs.id", ondelete="CASCADE"), index=True)
+    event_type: Mapped[str] = mapped_column(String(32), index=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    logged_at: Mapped[dt.datetime] = mapped_column(DateTime, default=utcnow)

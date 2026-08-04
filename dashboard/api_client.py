@@ -188,3 +188,27 @@ def skip_draft(job_id: int, draft_id: int) -> Dict[str, Any]:
 
 def set_outreach_contact(job_id: int, **fields) -> Dict[str, Any]:
     return _req("PUT", f"/outreach/{job_id}/contact", json=fields)
+
+
+# -- agents ----------------------------------------------------------------- #
+def run_agents() -> Dict[str, Any]:
+    return _req("POST", "/agents/run", timeout=LLM_TIMEOUT)
+
+
+def list_agent_runs() -> List[Dict[str, Any]]:
+    return _req("GET", "/agents/runs")
+
+
+def list_run_steps(run_id: int) -> List[Dict[str, Any]]:
+    return _req("GET", f"/agents/runs/{run_id}/steps")
+
+
+def list_suggestions(status: Optional[str] = None) -> List[Dict[str, Any]]:
+    params = {}
+    if status:
+        params["status"] = status
+    return _req("GET", "/agents/suggestions", params=params)
+
+
+def review_suggestion(suggestion_id: int, action: str) -> Dict[str, Any]:
+    return _req("POST", f"/agents/suggestions/{suggestion_id}/review", json={"action": action})
